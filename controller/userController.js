@@ -1,0 +1,138 @@
+const user = require("../models/users/user");
+const userService = require("../services/userServices");
+const AllValidation = require("../validation/AllValidation");
+
+const loginUser = async (req, res) => {
+  try {
+    const userdata = req.body;
+    const { value, error } = AllValidation.fatchUser.validate(userdata);
+    if (error !== undefined) {
+      console.log("error", error);
+      res.status(400).send(error.details[0].message);
+    } else {
+      const response = await userService.login(value);
+      if (response === "NOT FOUND!" || response === "Password wrong!") {
+        res.status(401).send(response);
+      } else {
+        res.send(response);
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const getId = async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+    const response = await userService.getIdByEmail(userEmail);
+    console.log("Respuesta del servicio:", response);
+    
+    if (!response) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+    
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("Error en getId:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
+const createUser = async (req, res) => {
+  try {
+    const userdata = req.body;
+    const { value, error } = AllValidation.createUser.validate(userdata);
+    if (error !== undefined) {
+      console.log("error", error);
+      res.status(400).send(error.details[0].message);
+    } else {
+      const user = await userService.createUser(value);
+      if (!user) {
+        res.sendStatus(401);
+      } else {
+        res.sendStatus(200);
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const getRole = async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+    const response = await userService.getRoleByEmail(userEmail);
+    res.send(response);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+
+const updateUser = async (req, res) => {
+  try {
+    const userdata = req.body;
+    const { value, error } = AllValidation.updateUser.validate(userdata);
+    if (error !== undefined) {
+      console.log("error", error);
+      res.status(400).send(error.details[0].message);
+    } else {
+      const response = await userService.updateUser({ id: req.params.id, ...value });
+      if (!response) {
+        res.sendStatus(404); // Usuario no encontrado
+      } else {
+        res.sendStatus(200); // Usuario actualizado con éxito
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const getAllUsers = async (req, res) => {
+  try {
+    const response = await userService.getAllUsers();
+    res.send(response);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const addmount = async (req, res) => {
+  try {
+    const { userId, month } = req.body;
+    const response = await userService.addmountserveice(userId, month);
+    res.send(response);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const getMounts = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await userService.getMounts(userId);
+    if (!user) {
+      return res.status(404).send("Usuario no encontrado");
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const deleteUser = async (req, res) => {};
+
+module.exports = { loginUser,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };
