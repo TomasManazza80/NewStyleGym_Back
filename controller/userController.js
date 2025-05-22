@@ -24,6 +24,37 @@ const loginUser = async (req, res) => {
 };
 
 
+const getActivity = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const response = await userService.getActivity(userId);
+    res.send(response);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  } 
+}
+const activityAsigned = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { actividad } = req.body; // La actividad viene en el cuerpo de la petición
+
+    const response = await userService.addActivity(actividad, id);
+    console.log("Respuesta del servicio:", response);
+
+    if (!response) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("Error en activityAsigned:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+
+
 const getId = async (req, res) => {
   try {
     const userEmail = req.params.email;
@@ -135,4 +166,4 @@ const getMounts = async (req, res) => {
 
 const deleteUser = async (req, res) => {};
 
-module.exports = { loginUser,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };
+module.exports = { loginUser,getActivity,activityAsigned,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };

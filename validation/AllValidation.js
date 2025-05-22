@@ -1,11 +1,11 @@
 const Joi = require("joi");
 
-const createUser = Joi.object().keys({
-  id: Joi.number().optional(),
+const createUser = Joi.object({
   name: Joi.string().required(),
-  number: Joi.string().required(),
   email: Joi.string().email().required(),
   password: Joi.string().required(),
+  number: Joi.string().required(),
+  actividad: Joi.string().required() // Agregado la validación para actividad
 });
 
 const fatchUser = Joi.object().keys({

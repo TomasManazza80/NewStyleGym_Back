@@ -14,7 +14,7 @@ var paymentRouter = require("./routes/paymentRoutes");  // Agregar esta línea
 var vexor = require("vexor");
 const productBought = require("./routes/productBoughtRoute");
 const { Vexor } = vexor;
-const API_URL = 'https://ecommerceback-server.onrender.com';
+const API_URL = 'http://localhost:3000';
 
 
 var app = express();  
@@ -45,7 +45,7 @@ app.use(`/`, usersRouter);
 app.use(`${API_URL}/product`, productRouter);
 app.use(`/`, usersRouter);
  
-app.use(`${API_URL}/payment`, paymentRouter);
+app.use(`/payment`, paymentRouter);
 
 app.use(`/products`, productRouter);
 app.use(`${API_URL}/boughtProduct`, productBought);

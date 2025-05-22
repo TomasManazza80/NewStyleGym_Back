@@ -36,6 +36,36 @@ const login = async (value) => {
   }
 };
 
+const getActivity = async (userId) => {
+  try {
+    const user = await model.user.findByPk(userId, {
+      attributes: ["actividad"],
+    });
+    if (!user) {
+      return null;
+    }
+    return user.actividad;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+const addActivity = async (actividad, id) => {
+  try {
+    const user = await model.user.findByPk(id);
+    if (!user) {
+      return null;
+    }
+    
+    await user.update({ actividad: actividad });
+    return user;
+  } catch (error) {
+    console.error("Error adding activity:", error);
+    throw error;
+  }
+};
+
 const addmountserveice = async (userId, month) => {
   try {
     const user = await model.user.findByPk(userId);
@@ -150,4 +180,4 @@ const updateUser = async (data) => {
 
 const deleteUser = async () => {};
 
-module.exports = { login, getIdByEmail, getMounts, createUser, updateUser, deleteUser, getRoleByEmail, getAllUsers, addmountserveice };
+module.exports = { login, getActivity,addActivity, getIdByEmail, getMounts, createUser, updateUser, deleteUser, getRoleByEmail, getAllUsers, addmountserveice };
