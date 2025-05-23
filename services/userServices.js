@@ -51,6 +51,22 @@ const getActivity = async (userId) => {
   }
 }
 
+const updateActivity = async (userId, actividad) => {
+  try {
+    const user = await model.user.findByPk(userId);
+    if (!user) {
+      return null;
+    }
+
+    await user.update({ actividad: actividad });
+    return user;
+  }
+  catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
 const addActivity = async (actividad, id) => {
   try {
     const user = await model.user.findByPk(id);
@@ -180,4 +196,4 @@ const updateUser = async (data) => {
 
 const deleteUser = async () => {};
 
-module.exports = { login, getActivity,addActivity, getIdByEmail, getMounts, createUser, updateUser, deleteUser, getRoleByEmail, getAllUsers, addmountserveice };
+module.exports = { updateActivity ,login, getActivity,addActivity, getIdByEmail, getMounts, createUser, updateUser, deleteUser, getRoleByEmail, getAllUsers, addmountserveice };

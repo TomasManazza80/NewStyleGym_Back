@@ -20,10 +20,10 @@
     "jwt-decode": "^4.0.0",
     "mercadopago": "^2.3.0",
     "morgan": "~1.9.1",
-    "pg": "^8.13.1",
+    "pg": "^8.16.0",
     "pg-hstore": "^2.3.4",
     "pug": "^3.0.3",
-    "sequelize": "^6.37.5",
+    "sequelize": "^6.37.7",
     "vexor": "^0.1.1"
   },
   "env": {

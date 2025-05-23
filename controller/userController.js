@@ -23,6 +23,18 @@ const loginUser = async (req, res) => {
   }
 };
 
+const updateActivity = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { actividad } = req.body;
+    const response = await userService.updateActivity(userId, actividad);
+    res.send(response);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
 
 const getActivity = async (req, res) => {
   try {
@@ -166,4 +178,4 @@ const getMounts = async (req, res) => {
 
 const deleteUser = async (req, res) => {};
 
-module.exports = { loginUser,getActivity,activityAsigned,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };
+module.exports = { updateActivity, loginUser,getActivity,activityAsigned,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };
