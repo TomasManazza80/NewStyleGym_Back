@@ -1,21 +1,19 @@
 const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
-const DATABASE = 'postgres';
-const USERNAME = 'postgres';
-const PASSWORD = 'password';
-const HOST = 'localhost';
-const PORT = 5432;
-const DIALECT = 'postgres';
+// Construye la URL de conexión con el formato correcto para PostgreSQL
+const dbUrl = `postgresql://newstylegym_database_user:PfhE3U8pXZMXNJXuAltLinsTTvGfc3jt@dpg-d0qrds2dbo4c73cc94c0-a.oregon-postgres.render.com/newstylegym_database`;
 
-const sequelize = new Sequelize(DATABASE, USERNAME, PASSWORD, {
-  host: HOST,
-  port: PORT,
-  dialect: DIALECT,
+const sequelize = new Sequelize(dbUrl, {
+  dialect: 'postgres',
   dialectOptions: {
-    ssl: false // <--- Deshabilitar SSL
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
   },
   logging: false,
-  native: false,
+  native: false
 });
 
 module.exports = sequelize;
