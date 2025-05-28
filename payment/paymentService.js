@@ -39,7 +39,7 @@ const processWebhookData = async (webhookData) => {
   if (webhookData.data.product) {
     const userId = webhookData.data.id;
     const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
-    await userService.addmountserveice(id);
+    await userService.addmountserveice(id, ActualyMonth);
   } else {
     console.error('No se encontró información del usuario!!!!!!');
   }
