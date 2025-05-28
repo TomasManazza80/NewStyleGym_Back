@@ -15,7 +15,7 @@ var vexor = require("vexor");
 const productBought = require("./routes/productBoughtRoute");
 const activityPricesRoutes = require('./routes/activityPrices');
 const { Vexor } = vexor;
-const API_URL = process.env.API_URL
+const API_URL = process.env.VITE_API_URL;  
 
 var app = express();  
 const PORT = 3000;

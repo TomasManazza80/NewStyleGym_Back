@@ -1,6 +1,7 @@
 const user = require("../models/users/user");
 const userService = require("../services/userServices");
 const AllValidation = require("../validation/AllValidation");
+const { authHash } = require('../services/auth/auth');
 
 const loginUser = async (req, res) => {
   try {
@@ -127,6 +128,11 @@ const updateUser = async (req, res) => {
       console.log("error", error);
       res.status(400).send(error.details[0].message);
     } else {
+      // Si hay una contraseña en los datos, primero la hasheamos
+      if (value.password) {
+        const EncyPass = await authHash({ password: value.password });
+        value.password = EncyPass;
+      }
       const response = await userService.updateUser({ id: req.params.id, ...value });
       if (!response) {
         res.sendStatus(404); // Usuario no encontrado
