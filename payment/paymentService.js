@@ -37,11 +37,11 @@ const createPreference = async (createPaymentDto, id) => {
 
 const processWebhookData = async (webhookData) => {
   if (webhookData.data.product) {
-    const productId = webhookData.data.product.id;
-    const quantity = webhookData.data.product.quantity;
-    await productService.updateQuantityProduct(productId, quantity);
+    const userId = webhookData.data.id;
+    const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
+    await userService.addmountserveice(id);
   } else {
-    console.error('No se encontró información de producto en el webhook');
+    console.error('No se encontró información del usuario!!!!!!');
   }
 };
 
