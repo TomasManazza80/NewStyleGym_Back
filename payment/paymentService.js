@@ -101,41 +101,45 @@ const processWebhookData = async (webhookData, queryParams) => {
     const payment = response.data;
     console.log("Detalles completos del pago de Mercado Pago:", payment);
 
-    let userId = payment.external_reference;
+    let userIdCandidate = payment.external_reference; // Usamos un nombre temporal para evitar confusión
     const payerEmail = payment.payer?.email;
 
-    if (!userId) {
+    // Si external_reference está vacío, intentamos usar payerEmail
+    if (!userIdCandidate) {
       console.warn(`external_reference no encontrado para el pago ${paymentId}. Intentando usar payerEmail.`);
       if (payerEmail) {
-        userId = payerEmail;
-        console.log(`Usando payerEmail como posible ID/Email de usuario: ${userId}`);
+        userIdCandidate = payerEmail;
+        console.log(`Usando payerEmail como posible ID/Email de usuario: ${userIdCandidate}`);
       } else {
         console.warn(`Ni external_reference ni payerEmail encontrados. No se pudo asociar a un usuario.`);
         return;
       }
     }
-    console.log(`Valor inicial para userId: ${userId}`);
+    console.log(`Valor inicial para userIdCandidate: ${userIdCandidate}`);
 
     let finalUserId;
 
-    if (userId.includes('@')) {
-      console.log(`El valor de userId (${userId}) parece ser un email. Obteniendo ID numérico...`);
+    // AHORA SÍ, VERIFICAMOS SI userIdCandidate ES UN EMAIL Y LO USAMOS COMO TAL
+    if (userIdCandidate.includes('@')) {
+      const userEmail = userIdCandidate; // Renombramos para mayor claridad
+      console.log(`El valor de userIdCandidate (${userEmail}) parece ser un email. Obteniendo ID numérico...`);
       try {
-        // En un entorno de producción, esta URL DEBERÍA ser la de tu backend desplegado
-        const getIdResponse = await axios.get(`https://newstylegym-back.onrender.com/getId/${userId}`); // ¡Revisa esta URL para producción!
+        // *** CORRECCIÓN CLAVE AQUÍ: usar userEmail en la URL ***
+        const getIdResponse = await axios.get(`https://newstylegym-back.onrender.com/getId/${userEmail}`);
         finalUserId = getIdResponse.data.id;
-        console.log(`ID numérico obtenido para ${userId}: ${finalUserId}`);
+        console.log(`ID numérico obtenido para ${userEmail}: ${finalUserId}`);
         if (!finalUserId) {
-          console.error(`No se pudo obtener el ID numérico para el email: ${userId}`);
+          console.error(`No se pudo obtener el ID numérico para el email: ${userEmail}`);
           return;
         }
       } catch (getEmailIdError) {
-        console.error(`Error al obtener ID del usuario por email (${userId}):`, getEmailIdError.message);
+        console.error(`Error al obtener ID del usuario por email (${userEmail}):`, getEmailIdError.message);
         return;
       }
     } else {
-      finalUserId = userId;
-      console.log(`El valor de userId (${userId}) se considera un ID numérico.`);
+      // Si no es un email, asumimos que ya es el ID numérico
+      finalUserId = userIdCandidate;
+      console.log(`El valor de userIdCandidate (${userIdCandidate}) se considera un ID numérico.`);
     }
 
     finalUserId = Number(finalUserId);
@@ -152,13 +156,12 @@ const processWebhookData = async (webhookData, queryParams) => {
         const amount = payment.transaction_amount;
         const paymentMethod = payment.payment_method_id;
 
-        // *** Obtener el mes actual ***
         const currentMonth = getMonthName(new Date());
         console.log(`Mes actual para el pago: ${currentMonth}`);
 
         const addMountBody = {
           userId: finalUserId,
-          month: currentMonth // ¡Ahora es dinámico!
+          month: currentMonth
         };
 
         console.log("Enviando POST a /addMount con body:", addMountBody);
