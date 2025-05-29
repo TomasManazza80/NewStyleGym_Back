@@ -1,6 +1,7 @@
 const mercadopago = require('mercadopago');
 const productService = require('../services/productService');
-console.log(productService);
+const userService = require('../services/userServices'); // Importar userService
+const axios = require('axios'); // Importar axios
 
 const createPreference = async (createPaymentDto, id) => {
   const client = {
@@ -36,12 +37,12 @@ const createPreference = async (createPaymentDto, id) => {
 };
 
 const processWebhookData = async (webhookData) => {
-  if (webhookData.data.product) {
-    const productId = webhookData.data.product.id;
-    const quantity = webhookData.data.product.quantity;
-    await productService.updateQuantityProduct(productId, quantity);
+  if (webhookData) {
+    const userId = webhookData.data.user_id;
+    const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
+    await userService.addmountserveice(userId, ActualyMonth); // Usar userId
   } else {
-    console.error('No se encontró información de producto en el webhook');
+    console.error('No se encontró información del usuario!!!!!!');
   }
 };
 

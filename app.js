@@ -26,6 +26,8 @@ const vexorInstance = new Vexor({
   apiKey: process.env.VEXOR_API_KEY,
 });
 
+
+
 // View engine setup
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));

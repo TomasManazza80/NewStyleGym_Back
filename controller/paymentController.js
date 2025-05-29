@@ -57,6 +57,7 @@ const createPayment = async (req, res) => {
 const handleWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
+    console.log('Datos del webhook:###############################', webhookData);
     await paymentService.processWebhookData(webhookData);
     res.status(200).send('Webhook procesado correctamente');
   } catch (error) {
