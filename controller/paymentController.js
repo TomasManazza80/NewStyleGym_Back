@@ -64,7 +64,7 @@ const handleWebhook = async (req, res) => {
     console.log('X-Request-ID:', xRequestId);
 
     // --- Validación de X-Signature (CRÍTICO) ---
-    const MERCADO_PAGO_WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+    const MERCADO_PAGO_WEBHOOK_SECRET = "ad9bda219685566844f7909a094560cf6c9c153d61ee93291c4585b365f0f623";
 
     if (!MERCADO_PAGO_WEBHOOK_SECRET) {
       console.error('Error: MERCADO_PAGO_WEBHOOK_SECRET no está configurada.');
