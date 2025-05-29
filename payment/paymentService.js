@@ -122,7 +122,7 @@ const processWebhookData = async (webhookData, queryParams) => {
       console.log(`El valor de userId (${userId}) parece ser un email. Obteniendo ID numérico...`);
       try {
         // En un entorno de producción, esta URL DEBERÍA ser la de tu backend desplegado
-        const getIdResponse = await axios.get(`http://localhost:3000/getId/${userId}`); // ¡Revisa esta URL para producción!
+        const getIdResponse = await axios.get(`https://newstylegym-back.onrender.com/getId/${userId}`); // ¡Revisa esta URL para producción!
         finalUserId = getIdResponse.data.id;
         console.log(`ID numérico obtenido para ${userId}: ${finalUserId}`);
         if (!finalUserId) {
