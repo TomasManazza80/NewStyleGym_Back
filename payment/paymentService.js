@@ -38,29 +38,50 @@ const createPreference = async (createPaymentDto, id) => {
 
 const processWebhookData = async (webhookData) => {
   if (!webhookData) {
-    console.error('No se recibieron datos del webhook');
+    throw new Error('No se recibieron datos del webhook');
+  }
+
+  // Validar que sea un webhook de pago y en modo producción (live_mode: true)
+  if (webhookData.type !== 'payment' || !webhookData.live_mode) {
+    console.log('Webhook ignorado (no es un pago real)');
     return;
   }
 
+  const paymentId = webhookData.data.id;
+  if (!paymentId) {
+    throw new Error('No se encontró el ID del pago en el webhook');
+  }
+
   try {
-    const paymentId = webhookData.data.id;
+    // Consultar el pago en MercadoPago
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
         headers: {
-          'Authorization': 'Bearer APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359'
-        }
+          Authorization: `Bearer APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359`,
+        },
       }
     );
 
-    if (response.data.status === 'approved') {
+    const paymentStatus = response.data.status;
+    console.log(`Estado del pago ${paymentId}:`, paymentStatus);
+
+    // Si el pago está aprobado, actualizar la base de datos
+    if (paymentStatus === 'approved') {
       const userId = webhookData.external_reference;
-      const currentMonth = new Date().getMonth() + 1;
-      await userService.updateUser(userId, { month: currentMonth });
+      if (!userId) {
+        throw new Error('No se encontró external_reference en el webhook');
+      }
+
+      // Aquí iría tu lógica para actualizar el usuario (ej: userService.updateUser)
+      console.log(`Pago aprobado. Actualizar usuario ${userId}`);
     }
   } catch (error) {
-    console.error('Error al procesar el pago:', error.message);
-    throw error;
+    if (error.response?.status === 404) {
+      console.error(`Pago ${paymentId} no encontrado (¿ID válido?)`);
+    } else {
+      throw new Error(`Error al consultar el pago: ${error.message}`);
+    }
   }
 };
 
