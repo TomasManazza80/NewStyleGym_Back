@@ -1,6 +1,6 @@
 const vexor = require('vexor');
 const dotenv = require('dotenv');
-const crypto = require('crypto'); // Importar el módulo crypto
+const crypto = require('crypto'); // Necesario si decides usar la validación de firma
 
 const productService = require('../services/productService'); // Asegúrate de que la ruta sea correcta
 const paymentService = require('../payment/paymentService');
@@ -16,7 +16,7 @@ const vexorInstance = new Vexor({
 });
 
 // Log para depuración
-console.log('Clave pública:', process.env.VEXOR_PUBLISHable_KEY);
+console.log('Clave pública:', process.env.VEXOR_PUBLISHABLE_KEY);
 console.log('ID del proyecto:', process.env.VEXOR_PROJECT_ID);
 console.log('Clave API:', process.env.VEXOR_API_KEY);
 
@@ -53,19 +53,31 @@ const createPayment = async (req, res) => {
   }
 };
 
+
+
 const handleWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
     const xSignature = req.headers['x-signature']; // Obtener el header X-Signature
     const xRequestId = req.headers['x-request-id']; // Obtener el header X-Request-ID
+    const queryParams = req.query; // Obtener los query parameters
 
     console.log('Datos del webhook:', webhookData);
     console.log('X-Signature:', xSignature);
     console.log('X-Request-ID:', xRequestId);
-    console.log('Query Params:', req.query); // Agregado para depuración
+    console.log('Query Params:', queryParams); 
 
-    // --- Validación de X-Signature (CRÍTICO) ---
-    const MERCADO_PAGO_WEBHOOK_SECRET = "ad9bda219685566844f7909a094560cf6c9c153d61ee93291c4585b365f0f623";
+    // Verificación básica de datos
+    if (!webhookData || !webhookData.type) {
+      console.warn('Datos del webhook inválidos o incompletos.');
+      return res.status(400).send('Datos del webhook inválidos.');
+    }
+
+    // --- LÓGICA DE VALIDACIÓN DE X-SIGNATURE (ALTAMENTE RECOMENDADO) ---
+    // Si realmente NO quieres validar la firma, puedes comentar o eliminar este bloque.
+    // PERO ES UN RIESGO DE SEGURIDAD MUY ALTO PARA PRODUCCIÓN.
+    /*
+    const MERCADO_PAGO_WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
 
     if (!MERCADO_PAGO_WEBHOOK_SECRET) {
       console.error('Error: MERCADO_PAGO_WEBHOOK_SECRET no está configurada.');
@@ -77,7 +89,6 @@ const handleWebhook = async (req, res) => {
       return res.status(400).send('Falta la firma de seguridad.');
     }
 
-    // Extraer ts y v1 de x-signature
     const signatureParts = xSignature.split(',');
     let ts = '';
     let v1 = '';
@@ -94,19 +105,12 @@ const handleWebhook = async (req, res) => {
       return res.status(400).send('Firma de seguridad inválida.');
     }
 
-    // CORRECCIÓN CLAVE AQUÍ: Obtener el ID de los query params si está presente
-    // La documentación de MP dice `id:[data.id_url]`
-    const dataId = req.query['data.id'] ? req.query['data.id'].toString().toLowerCase() : '';
+    // Obtener el ID de los query params (data.id_url) si existe
+    const dataId = queryParams['data.id'] ? queryParams['data.id'].toString().toLowerCase() : '';
     
-    // Construir la plantilla para el HMAC
     let template = `id:${dataId};request-id:${xRequestId || ''};ts:${ts};`;
-    
-    // Si alguna parte de la plantilla no tiene valor, debe ser eliminada
-    // Ejemplo: si request-id no existe, el template no debe tener `request-id:;`
-    // Esta regex limpia los segmentos vacíos, pero ten cuidado con otros patrones de URL
     template = template.replace(/;[^;]*:;/, ';').replace(/;$/, ''); 
 
-    // Generar la clave de contador (HMAC)
     const hmac = crypto.createHmac('sha256', MERCADO_PAGO_WEBHOOK_SECRET);
     hmac.update(template);
     const generatedV1 = hmac.digest('hex');
@@ -118,26 +122,27 @@ const handleWebhook = async (req, res) => {
       console.error('Generated v1:', generatedV1);
       return res.status(401).send('No autorizado: Firma inválida.');
     }
-    // --- Fin de Validación de X-Signature ---
+    // --- FIN LÓGICA DE VALIDACIÓN DE X-SIGNATURE ---
+    */
 
-    // Responder 200 OK inmediatamente después de la validación para evitar reintentos de MP
+    // IMPORTANTE: Responder 200 OK inmediatamente después de la validación
+    // (o después de las comprobaciones básicas si no validas la firma)
+    // Esto es CRÍTICO para que Mercado Pago no reintente la notificación.
     res.status(200).send('OK');
 
-    // Procesar el webhook asíncronamente (sin bloquear la respuesta HTTP)
-    paymentService.processWebhookData(webhookData)
+    // Procesar el webhook asíncronamente en segundo plano
+    // Pasa los queryParams si paymentService los necesita
+    paymentService.processWebhookData(webhookData, queryParams)
       .then(() => console.log('Webhook procesado con éxito en background.'))
       .catch(error => console.error('Error procesando webhook en background:', error));
 
   } catch (error) {
-    console.error('Error al manejar el webhook:', error);
+    console.error('Error en handleWebhook (captura general):', error);
     // Asegurar que siempre se envía una respuesta en caso de error
     if (!res.headersSent) {
-      res.status(500).send('Error interno del servidor.');
+      res.status(500).send('Error al procesar el webhook');
     }
   }
 };
 
-module.exports = {
-  createPayment,
-  handleWebhook
-};
+module.exports = { createPayment, handleWebhook };
