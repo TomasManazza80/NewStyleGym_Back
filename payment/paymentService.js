@@ -65,8 +65,8 @@ const processWebhookData = async (webhookData) => {
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       
       {
-        headers: {
-          Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+         headers: {
+          Authorization: `Bearer APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359`,
         },
       }
     );
