@@ -64,14 +64,15 @@ const processWebhookData = async (webhookData) => {
     );
 
     const paymentStatus = response.data.status;
-    console.log(`Estado del pago ${paymentId}:`, paymentStatus);
+    console.log(`Estado del pago@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ${paymentId}:`, paymentStatus);
 
     // Si el pago está aprobado, actualizar la base de datos
     if (paymentStatus === 'approved') {
       const userId = webhookData.external_reference;
+      console.log(`---------------------------------------------------external_reference del pago: ${userId}`);
       if (!userId) {
         throw new Error('No se encontró external_reference en el webhook');
-      }
+      } 
 
       // Aquí iría tu lógica para actualizar el usuario (ej: userService.updateUser)
       console.log(`Pago aprobado. Actualizar usuario ${userId}`);
