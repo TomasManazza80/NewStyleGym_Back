@@ -57,11 +57,17 @@ const createPayment = async (req, res) => {
 const handleWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
-    console.log('Datos del webhook:###############################', webhookData);
+    console.log('Datos del webhook:', webhookData);
+
+    // Verificación básica de datos
+    if (!webhookData || !webhookData.type) {
+      return res.status(400).send('Datos del webhook inválidos');
+    }
+
     await paymentService.processWebhookData(webhookData);
-    res.status(200).send('Webhook procesado correctamente');
+    res.status(200).send('OK');
   } catch (error) {
-    console.error(error);
+    console.error('Error en handleWebhook:', error);
     res.status(500).send('Error al procesar el webhook');
   }
 };
