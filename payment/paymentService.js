@@ -37,7 +37,7 @@ const createPreference = async (createPaymentDto, id) => {
 
 const processWebhookData = async (webhookData) => {
   // Prioriza el 'id' directamente del webhookData, si no, usa webhookData.data.id
-  const id = webhookData.id || (webhookData.data ? webhookData.data.id : null);
+  const id = webhookData.data.id || (webhookData.data ? webhookData.data.id : null);
 
   if (id) {
     const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
