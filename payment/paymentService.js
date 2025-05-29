@@ -40,6 +40,7 @@ const processWebhookData = async (webhookData) => {
         const id = webhookData.data.id;
         const ActualyMonth = new Date().getMonth() + 1;
         await userService.addmountserveice(id, ActualyMonth);
+      console.log("USUARIO PAGADO");
     } else {
         console.error('No se encontró información del usuario o el formato es incorrecto', webhookData);
     }
