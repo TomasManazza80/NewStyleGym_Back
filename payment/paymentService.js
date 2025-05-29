@@ -36,8 +36,8 @@ const createPreference = async (createPaymentDto, id) => {
 };
 
 const processWebhookData = async (webhookData) => {
-  if (webhookData.data.product) {
-    const userId = webhookData.data.id;
+  if (webhookData.data) {
+    const id = webhookData.data.id;
     const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
     await userService.addmountserveice(id, ActualyMonth);
   } else {
