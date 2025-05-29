@@ -62,13 +62,13 @@ const processWebhookData = async (webhookData) => {
         },
       }
     );
-
+console.log('Respuesta del ID %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%:', response.data);
     const paymentStatus = response.data.status;
     console.log(`Estado del pago@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ${paymentId}:`, paymentStatus);
 
     // Si el pago está aprobado, actualizar la base de datos
     if (paymentStatus === 'approved') {
-      const userId = webhookData.external_reference;
+      const userId = response.data.external_reference;
       console.log(`---------------------------------------------------external_reference del pago: ${userId}`);
       if (!userId) {
         throw new Error('No se encontró external_reference en el webhook');
@@ -85,7 +85,6 @@ const processWebhookData = async (webhookData) => {
     }
   }
 };
-
 const success = async (webhookData) => {
   const url = 'http://localhost:5173/'; // SI LA OPERACION ES EXITOSA, SE REDIRECCIONA ESTA URL
   const data = {
