@@ -40,7 +40,7 @@ const createPreference = async (createPaymentDto, id) => {
 
 
 
-const processWebhookData = async (webhookData) => {
+const processWebhookData = async (webhookData, req) => {
   if (!webhookData) {
     console.log("Webhook sin datos recibido");
     return; // Salir silenciosamente
@@ -53,6 +53,7 @@ const processWebhookData = async (webhookData) => {
   }
 
   // 2. Extraer ID del pago (del webhook o de la URL)
+  // Se agregó 'req' como parámetro para acceder a req.query
   const paymentId = webhookData.data?.id || req.query['data.id']; // Compatibilidad con MercadoPago
   if (!paymentId) {
     console.error("No se encontró ID de pago");
@@ -63,8 +64,10 @@ const processWebhookData = async (webhookData) => {
     // 3. Consultar el pago a la API de MercadoPago (sin importar live_mode)
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      
       {
         headers: {
+          // Asegúrate de que MERCADOPAGO_ACCESS_TOKEN esté configurado correctamente en tu archivo .env
           Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
         },
       }
