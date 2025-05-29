@@ -1,5 +1,6 @@
 const vexor = require('vexor');
 const dotenv = require('dotenv');
+const crypto = require('crypto'); // Importar el módulo crypto
 
 const productService = require('../services/productService'); // Asegúrate de que la ruta sea correcta
 const paymentService = require('../payment/paymentService');
@@ -52,19 +53,97 @@ const createPayment = async (req, res) => {
   }
 };
 
-
-
 const handleWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
-    console.log('Datos del webhook recibido:', webhookData);
+    const xSignature = req.headers['x-signature']; // Obtener el header X-Signature
+    const xRequestId = req.headers['x-request-id']; // Obtener el header X-Request-ID
 
-    await paymentService.processWebhookData(webhookData);
-    res.status(200).send('Webhook procesado correctamente');
+    console.log('Datos del webhook:', webhookData);
+    console.log('X-Signature:', xSignature);
+    console.log('X-Request-ID:', xRequestId);
+
+    // --- Validación de X-Signature (CRÍTICO) ---
+    const MERCADO_PAGO_WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+
+    if (!MERCADO_PAGO_WEBHOOK_SECRET) {
+      console.error('Error: MERCADO_PAGO_WEBHOOK_SECRET no está configurada.');
+      return res.status(500).send('Error de configuración del servidor.');
+    }
+
+    if (!xSignature) {
+      console.warn('Webhook recibido sin X-Signature. Posible intento no válido.');
+      return res.status(400).send('Falta la firma de seguridad.');
+    }
+
+    // Extraer ts y v1 de x-signature
+    const signatureParts = xSignature.split(',');
+    let ts = '';
+    let v1 = '';
+    signatureParts.forEach(part => {
+      if (part.startsWith('ts=')) {
+        ts = part.substring(3);
+      } else if (part.startsWith('v1=')) {
+        v1 = part.substring(3);
+      }
+    });
+
+    if (!ts || !v1) {
+      console.warn('X-Signature con formato inválido.');
+      return res.status(400).send('Firma de seguridad inválida.');
+    }
+
+    // Construir la plantilla para el HMAC
+    // `data.id` del webhook (query param) si existe. Si es alfanumérico, convertir a minúsculas.
+    // Para pagos, el ID generalmente viene en `data.id` (webhookData.data.id).
+    const dataId = webhookData.data && webhookData.data.id ? webhookData.data.id.toString().toLowerCase() : '';
+    
+    // La plantilla depende de la URL de notificación que configuraste en MP.
+    // Si la URL es por ejemplo: https://tudominio.com/payment/webhook?data.id=123
+    // Entonces `data.id` sería el 123.
+    // Para webhooks de tipo `payment`, el ID del pago viene en `webhookData.data.id`
+    // y se usa en la URL de consulta si configuras una URL dinámica,
+    // o simplemente si configuras una URL estática, el ID viene en el body.
+    // La documentación dice `id:[data.id_url]`, refiriéndose al ID en la URL.
+    // Si tu URL de webhook es solo `/webhook` y el ID del pago viene en el body,
+    // puedes usar el ID del body para la verificación.
+    // Asumiré que `data.id` en la plantilla se refiere al ID del pago del body para la validación.
+    
+    let template = `id:${dataId};request-id:${xRequestId || ''};ts:${ts};`;
+    
+    // Si alguna parte de la plantilla no tiene valor, debe ser eliminada
+    template = template.replace(/;[^;]*:;/, ';').replace(/;$/, ''); // Eliminar pares vacíos
+
+    // Generar la clave de contador (HMAC)
+    const hmac = crypto.createHmac('sha256', MERCADO_PAGO_WEBHOOK_SECRET);
+    hmac.update(template);
+    const generatedV1 = hmac.digest('hex');
+
+    if (generatedV1 !== v1) {
+      console.error('Firma de seguridad inválida. El webhook no es auténtico.');
+      return res.status(401).send('No autorizado: Firma inválida.');
+    }
+    // --- Fin de Validación de X-Signature ---
+
+    // Responder 200 OK inmediatamente después de la validación para evitar reintentos de MP
+    res.status(200).send('OK');
+
+    // Procesar el webhook asíncronamente (sin bloquear la respuesta HTTP)
+    // Esto es importante para que el endpoint responda rápidamente
+    paymentService.processWebhookData(webhookData)
+      .then(() => console.log('Webhook procesado con éxito en background.'))
+      .catch(error => console.error('Error procesando webhook en background:', error));
+
   } catch (error) {
-    console.error('Error en handleWebhook:', error.message);
-    res.status(500).send('Error al procesar el webhook');
+    console.error('Error al manejar el webhook:', error);
+    // Asegurar que siempre se envía una respuesta en caso de error
+    if (!res.headersSent) {
+      res.status(500).send('Error interno del servidor.');
+    }
   }
 };
 
-module.exports = { createPayment, handleWebhook };
+module.exports = {
+  createPayment,
+  handleWebhook
+};
