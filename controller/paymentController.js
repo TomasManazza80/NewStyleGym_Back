@@ -56,20 +56,13 @@ const createPayment = async (req, res) => {
 
 const handleWebhook = async (req, res) => {
   try {
-    // Intenta obtener los datos del cuerpo o de los parámetros de consulta
-    const webhookData = req.body && Object.keys(req.body).length > 0 ? req.body : req.query;
-    console.log('Webhook data received:', webhookData);
-
-    // Asegúrate de que webhookData tenga la estructura esperada o adapta processWebhookData
-    // Si el ID viene como data.id en la query, webhookData.data.id será accesible.
-    // Si el ID viene como id en la query, webhookData.id será accesible.
-    // Si viene en el body, la estructura original debería funcionar.
-
+    const webhookData = req.body;
+    
     await paymentService.processWebhookData(webhookData);
-    res.status(200).send('Webhook received successfully');
+    res.status(200).send('Webhook procesado correctamente');
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(500).send('Error processing webhook');
+    console.error(error);
+    res.status(500).send('Error al procesar el webhook');
   }
 };
 
