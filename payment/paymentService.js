@@ -3,6 +3,15 @@ const productService = require('../services/productService');
 const userService = require('../services/userServices'); // Importar userService
 const axios = require('axios'); // Importar axios
 
+// Función auxiliar para obtener el nombre del mes
+const getMonthName = (date) => {
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  return monthNames[date.getMonth()];
+};
+
 const createPreference = async (createPaymentDto, id) => {
   const client = {
     access_token: 'APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359',
@@ -20,7 +29,7 @@ const createPreference = async (createPaymentDto, id) => {
       },
     ],
     back_urls: {
-      success: 'https://gymnewstylesantafe.netlify.app/products', 
+      success: 'https://gymnewstylesantafe.netlify.app/products',
       failure: 'https://gymnewstylesantafe.netlify.app/products',
       pending: 'http://localhost:5173', // Ojo: en producción debe ser una URL pública
     },
@@ -39,38 +48,22 @@ const createPreference = async (createPaymentDto, id) => {
 // ****************************************************
 // LÓGICA DE IDEMPOTENCIA (ADAPTAR A TU BASE DE DATOS)
 // ****************************************************
-// Esto es CRÍTICO para evitar que un pago se procese varias veces
-// si Mercado Pago reintenta el webhook.
 
 const hasPaymentBeenProcessed = async (paymentId) => {
   // TODO: Implementa esto con tu base de datos.
-  // Ejemplo conceptual:
-  // const existingRecord = await YourPaymentModel.findOne({ mercadopagoId: paymentId });
-  // return existingRecord && existingRecord.status === 'processed_by_webhook';
   console.log(`[Idempotencia] Verificando si el pago ${paymentId} ya fue procesado.`);
   return false; // Por ahora, asume que no ha sido procesado (cambiar para prod)
 };
 
 const markPaymentAsProcessed = async (paymentId, userId, amount, paymentMethod) => {
   // TODO: Implementa esto con tu base de datos.
-  // Guarda el ID de Mercado Pago, el ID del usuario, el monto, el método,
-  // y marca el registro como procesado.
   console.log(`[Idempotencia] Marcando pago ${paymentId} como procesado para usuario ${userId}.`);
-  // Ejemplo conceptual:
-  // await YourPaymentModel.createOrUpdate({ 
-  //   mercadopagoId: paymentId, 
-  //   userId: userId, 
-  //   amount: amount, 
-  //   paymentMethod: paymentMethod,
-  //   status: 'processed_by_webhook' 
-  // });
 };
 
 // ****************************************************
 // FIN LÓGICA DE IDEMPOTENCIA
 // ****************************************************
 
-// `queryParams` se pasa desde el controller para acceder a `data.id` de la URL
 const processWebhookData = async (webhookData, queryParams) => {
   if (!webhookData) {
     console.warn("Webhook sin datos recibido.");
@@ -79,32 +72,23 @@ const processWebhookData = async (webhookData, queryParams) => {
 
   console.log(`Tipo de webhook recibido: ${webhookData.type}`);
 
-  // Mercado Pago envía 'topic_merchant_order_wh' para órdenes de venta, pero el pago en sí es 'payment'.
-  // Solo procesaremos explícitamente los webhooks de tipo 'payment'.
-  // La imagen de ejemplo muestra `type: "payment"`, pero el log anterior tuyo fue `type: 'topic_merchant_order_wh'`.
-  // Es importante manejar el tipo correcto. Si necesitas `merchant_order`, la lógica sería diferente.
   if (webhookData.type !== 'payment') {
-      console.log(`Webhook de tipo '${webhookData.type}' ignorado. Solo se procesan 'payment' webhooks.`);
-      return;
+    console.log(`Webhook de tipo '${webhookData.type}' ignorado. Solo se procesan 'payment' webhooks.`);
+    return;
   }
 
-  // 2. Extraer ID del pago
-  // Primero intenta de webhookData.data.id (body), luego de queryParams['data.id'] (URL)
-  const paymentId = webhookData.data?.id || queryParams['data.id']; 
+  const paymentId = webhookData.data?.id || queryParams['data.id'];
   if (!paymentId) {
     console.error("No se encontró ID de pago en el webhook.");
     return;
   }
 
-  // 3. Lógica de Idempotencia: Verifica si ya fue procesado
   if (await hasPaymentBeenProcessed(paymentId)) {
     console.log(`Pago ${paymentId} ya ha sido procesado. Ignorando reintento.`);
     return;
   }
 
   try {
-    // 4. Consultar el pago a la API de MercadoPago para obtener detalles completos
-    // Esto es vital para confirmar el estado y obtener todos los detalles del pago.
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
@@ -117,53 +101,82 @@ const processWebhookData = async (webhookData, queryParams) => {
     const payment = response.data;
     console.log("Detalles completos del pago de Mercado Pago:", payment);
 
-    // 5. Identificar al usuario (asumiendo external_reference es tu ID de usuario)
-    const userId = payment.external_reference; // Asume que external_reference es el ID de tu usuario
+    let userId = payment.external_reference;
+    const payerEmail = payment.payer?.email;
+
     if (!userId) {
-      console.warn(`external_reference no encontrado para el pago ${paymentId}. No se pudo asociar a un usuario.`);
+      console.warn(`external_reference no encontrado para el pago ${paymentId}. Intentando usar payerEmail.`);
+      if (payerEmail) {
+        userId = payerEmail;
+        console.log(`Usando payerEmail como posible ID/Email de usuario: ${userId}`);
+      } else {
+        console.warn(`Ni external_reference ni payerEmail encontrados. No se pudo asociar a un usuario.`);
+        return;
+      }
+    }
+    console.log(`Valor inicial para userId: ${userId}`);
+
+    let finalUserId;
+
+    if (userId.includes('@')) {
+      console.log(`El valor de userId (${userId}) parece ser un email. Obteniendo ID numérico...`);
+      try {
+        // En un entorno de producción, esta URL DEBERÍA ser la de tu backend desplegado
+        const getIdResponse = await axios.get(`http://localhost:3000/getId/${userId}`); // ¡Revisa esta URL para producción!
+        finalUserId = getIdResponse.data.id;
+        console.log(`ID numérico obtenido para ${userId}: ${finalUserId}`);
+        if (!finalUserId) {
+          console.error(`No se pudo obtener el ID numérico para el email: ${userId}`);
+          return;
+        }
+      } catch (getEmailIdError) {
+        console.error(`Error al obtener ID del usuario por email (${userId}):`, getEmailIdError.message);
+        return;
+      }
+    } else {
+      finalUserId = userId;
+      console.log(`El valor de userId (${userId}) se considera un ID numérico.`);
+    }
+
+    finalUserId = Number(finalUserId);
+    if (isNaN(finalUserId)) {
+      console.error(`El ID final del usuario no es un número válido: ${finalUserId}`);
       return;
     }
-    console.log(`Usuario asociado: ${userId}`);
 
-    // 6. Procesar solo pagos aprobados
     if (payment.status === 'approved') {
-      console.log(`✅ Pago ${paymentId} aprobado. Usuario: ${userId}.`);
-      
-      // *** AQUÍ ES DONDE TOMAS COMO PAGADO EL MES ***
-      // Esto es un EJEMPLO. Debes adaptar la lógica a tu modelo de usuario y suscripción.
+      console.log(`✅ Pago ${paymentId} aprobado. Usuario: ${finalUserId}.`);
+
       try {
-        console.log(`Activando/actualizando mes para el usuario ${userId}...`);
+        console.log(`Activando/actualizando mes para el usuario ${finalUserId}...`);
         const amount = payment.transaction_amount;
         const paymentMethod = payment.payment_method_id;
-        const payerEmail = payment.payer?.email;
-        
-        // Asumiendo que `userService.activateMonth` existe y actualiza el estado de pago del usuario
-        // o agrega un mes a su suscripción.
-        // await userService.activateMonth(userId, { 
-        //   paymentId: paymentId, 
-        //   amount: amount, 
-        //   paymentMethod: paymentMethod, 
-        //   payerEmail: payerEmail,
-        //   dateApproved: payment.date_approved
-        // });
-        console.log(`Mes activado para el usuario ${userId} por el pago ${paymentId}.`);
-        
-        // IMPORTANTE: Marcar el pago como procesado para idempotencia
-        await markPaymentAsProcessed(paymentId, userId, amount, paymentMethod);
+
+        // *** Obtener el mes actual ***
+        const currentMonth = getMonthName(new Date());
+        console.log(`Mes actual para el pago: ${currentMonth}`);
+
+        const addMountBody = {
+          userId: finalUserId,
+          month: currentMonth // ¡Ahora es dinámico!
+        };
+
+        console.log("Enviando POST a /addMount con body:", addMountBody);
+
+        await axios.post('https://newstylegym-back.onrender.com/addMount', addMountBody);
+        console.log(`POST a /addMount enviado con éxito para el usuario ${finalUserId}.`);
+
+        await markPaymentAsProcessed(paymentId, finalUserId, amount, paymentMethod);
 
       } catch (activationError) {
-        console.error(`Error al activar el mes para el usuario ${userId} por el pago ${paymentId}:`, activationError.message);
-        // Podrías querer loguear esto o enviar una alerta
+        console.error(`Error al activar el mes para el usuario ${finalUserId} por el pago ${paymentId} o al enviar a /addMount:`, activationError.message);
+        if (activationError.response) {
+          console.error('Datos de error de Axios desde /addMount:', activationError.response.data);
+        }
       }
-
-      // Si tenías una función `success` que NO re-enviaba webhooks a localhost,
-      // y quieres que se ejecute después de procesar el pago, puedes llamarla aquí.
-      // success(webhookData); 
 
     } else {
       console.log(`Pago ${paymentId} no está aprobado (estado actual: ${payment.status}).`);
-      // Aquí puedes manejar otros estados si es necesario (ej. 'pending', 'rejected', 'cancelled')
-      // await userService.updatePaymentStatus(userId, paymentId, payment.status);
     }
 
   } catch (error) {
@@ -171,19 +184,12 @@ const processWebhookData = async (webhookData, queryParams) => {
     if (error.response) {
       console.error('Datos de error de Axios:', error.response.data);
     }
-    // No relanzar el error para evitar reintentos de Mercado Pago.
-    // El 200 OK ya se envió en el controlador.
   }
 };
 
-// Esta función NO debe re-enviar webhooks a localhost.
-// La he dejado vacía, si tiene otro propósito, adáptala.
 const success = async (webhookData) => {
-    console.log("Función 'success' ejecutada para webhook. Ya no re-envía a localhost.");
-    // Aquí puedes poner lógica para notificar a otros sistemas internos
-    // o logging adicional después del procesamiento principal.
+  console.log("Función 'success' ejecutada para webhook. Ya no re-envía a localhost.");
 };
-
 
 module.exports = {
   createPreference,
