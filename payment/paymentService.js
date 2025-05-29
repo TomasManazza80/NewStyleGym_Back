@@ -36,55 +36,62 @@ const createPreference = async (createPaymentDto, id) => {
   }
 };
 
+
+
+
+
 const processWebhookData = async (webhookData) => {
   if (!webhookData) {
-    throw new Error('No se recibieron datos del webhook');
+    console.log("Webhook sin datos recibido");
+    return; // Salir silenciosamente
   }
 
-  // Validar que sea un webhook de pago y en modo producción (live_mode: true)
-  if (webhookData.type !== 'payment' || !webhookData.live_mode) {
-    console.log('Webhook ignorado (no es un pago real)');
+  // 1. Aceptar tanto webhooks reales como de prueba (ignorar merchant_order)
+  if (webhookData.type !== 'payment') {
+    console.log(`Webhook ignorado (tipo no soportado): ${webhookData.type}`);
     return;
   }
 
-  const paymentId = webhookData.data.id;
+  // 2. Extraer ID del pago (del webhook o de la URL)
+  const paymentId = webhookData.data?.id || req.query['data.id']; // Compatibilidad con MercadoPago
   if (!paymentId) {
-    throw new Error('No se encontró el ID del pago en el webhook');
+    console.error("No se encontró ID de pago");
+    return;
   }
 
   try {
-    // Consultar el pago en MercadoPago
+    // 3. Consultar el pago a la API de MercadoPago (sin importar live_mode)
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
         headers: {
-          Authorization: `Bearer APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359`,
+          Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
         },
       }
     );
-console.log('Respuesta del ID %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%:', response.data);
-    const paymentStatus = response.data.status;
-    console.log(`Estado del pago@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ${paymentId}:`, paymentStatus);
 
-    // Si el pago está aprobado, actualizar la base de datos
-    if (paymentStatus === 'approved') {
-      const userId = response.data.external_reference;
-      console.log(`---------------------------------------------------external_reference del pago: ${userId}`);
-      if (!userId) {
-        throw new Error('No se encontró external_reference en el webhook');
-      } 
+    const payment = response.data;
+    console.log("Estado del pago:", payment.status);
 
-      // Aquí iría tu lógica para actualizar el usuario (ej: userService.updateUser)
-      console.log(`Pago aprobado. Actualizar usuario ${userId}`);
+    // 4. Identificar al usuario (flexible)
+    const userId = payment.external_reference || payment.payer?.id || 'guest';
+    console.log(`Usuario asociado: ${userId}`);
+
+    // 5. Procesar pagos aprobados (incluyendo pruebas)
+    if (payment.status === 'approved') {
+      console.log(`✅ Pago ${paymentId} aprobado. Usuario: ${userId}`);
+      // Ejemplo: Actualizar base de datos (compatible con pruebas)
+      // await userService.updateSubscription(userId, { active: true });
     }
+
   } catch (error) {
-    if (error.response?.status === 404) {
-      console.error(`Pago ${paymentId} no encontrado (¿ID válido?)`);
-    } else {
-      throw new Error(`Error al consultar el pago: ${error.message}`);
-    }
+    console.error(`Error al procesar el pago ${paymentId}:`, error.message);
+    // No relanzar el error para evitar reintentos de MercadoPago
   }
 };
+
+
+
 const success = async (webhookData) => {
   const url = 'http://localhost:5173/'; // SI LA OPERACION ES EXITOSA, SE REDIRECCIONA ESTA URL
   const data = {
