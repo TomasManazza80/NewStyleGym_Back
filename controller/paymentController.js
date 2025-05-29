@@ -16,7 +16,7 @@ const vexorInstance = new Vexor({
 });
 
 // Log para depuración
-console.log('Clave pública:', process.env.VEXOR_PUBLISHABLE_KEY);
+console.log('Clave pública:', process.env.VEXOR_PUBLISHable_KEY);
 console.log('ID del proyecto:', process.env.VEXOR_PROJECT_ID);
 console.log('Clave API:', process.env.VEXOR_API_KEY);
 
@@ -62,6 +62,7 @@ const handleWebhook = async (req, res) => {
     console.log('Datos del webhook:', webhookData);
     console.log('X-Signature:', xSignature);
     console.log('X-Request-ID:', xRequestId);
+    console.log('Query Params:', req.query); // Agregado para depuración
 
     // --- Validación de X-Signature (CRÍTICO) ---
     const MERCADO_PAGO_WEBHOOK_SECRET = "ad9bda219685566844f7909a094560cf6c9c153d61ee93291c4585b365f0f623";
@@ -93,26 +94,17 @@ const handleWebhook = async (req, res) => {
       return res.status(400).send('Firma de seguridad inválida.');
     }
 
+    // CORRECCIÓN CLAVE AQUÍ: Obtener el ID de los query params si está presente
+    // La documentación de MP dice `id:[data.id_url]`
+    const dataId = req.query['data.id'] ? req.query['data.id'].toString().toLowerCase() : '';
+    
     // Construir la plantilla para el HMAC
-    // `data.id` del webhook (query param) si existe. Si es alfanumérico, convertir a minúsculas.
-    // Para pagos, el ID generalmente viene en `data.id` (webhookData.data.id).
-    const dataId = webhookData.data && webhookData.data.id ? webhookData.data.id.toString().toLowerCase() : '';
-    
-    // La plantilla depende de la URL de notificación que configuraste en MP.
-    // Si la URL es por ejemplo: https://tudominio.com/payment/webhook?data.id=123
-    // Entonces `data.id` sería el 123.
-    // Para webhooks de tipo `payment`, el ID del pago viene en `webhookData.data.id`
-    // y se usa en la URL de consulta si configuras una URL dinámica,
-    // o simplemente si configuras una URL estática, el ID viene en el body.
-    // La documentación dice `id:[data.id_url]`, refiriéndose al ID en la URL.
-    // Si tu URL de webhook es solo `/webhook` y el ID del pago viene en el body,
-    // puedes usar el ID del body para la verificación.
-    // Asumiré que `data.id` en la plantilla se refiere al ID del pago del body para la validación.
-    
     let template = `id:${dataId};request-id:${xRequestId || ''};ts:${ts};`;
     
     // Si alguna parte de la plantilla no tiene valor, debe ser eliminada
-    template = template.replace(/;[^;]*:;/, ';').replace(/;$/, ''); // Eliminar pares vacíos
+    // Ejemplo: si request-id no existe, el template no debe tener `request-id:;`
+    // Esta regex limpia los segmentos vacíos, pero ten cuidado con otros patrones de URL
+    template = template.replace(/;[^;]*:;/, ';').replace(/;$/, ''); 
 
     // Generar la clave de contador (HMAC)
     const hmac = crypto.createHmac('sha256', MERCADO_PAGO_WEBHOOK_SECRET);
@@ -121,6 +113,9 @@ const handleWebhook = async (req, res) => {
 
     if (generatedV1 !== v1) {
       console.error('Firma de seguridad inválida. El webhook no es auténtico.');
+      console.error('Template generado:', template);
+      console.error('Expected v1:', v1);
+      console.error('Generated v1:', generatedV1);
       return res.status(401).send('No autorizado: Firma inválida.');
     }
     // --- Fin de Validación de X-Signature ---
@@ -129,7 +124,6 @@ const handleWebhook = async (req, res) => {
     res.status(200).send('OK');
 
     // Procesar el webhook asíncronamente (sin bloquear la respuesta HTTP)
-    // Esto es importante para que el endpoint responda rápidamente
     paymentService.processWebhookData(webhookData)
       .then(() => console.log('Webhook procesado con éxito en background.'))
       .catch(error => console.error('Error procesando webhook en background:', error));
