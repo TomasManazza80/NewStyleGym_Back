@@ -36,14 +36,15 @@ const createPreference = async (createPaymentDto, id) => {
 };
 
 const processWebhookData = async (webhookData) => {
-    if (webhookData?.data?.id) { // Verifica que exista webhookData.data y webhookData.data.id
-        const id = webhookData.data.id;
-        const ActualyMonth = new Date().getMonth() + 1;
-        await userService.addmountserveice(id, ActualyMonth);
-      console.log("USUARIO PAGADO");
-    } else {
-        console.error('No se encontró información del usuario o el formato es incorrecto', webhookData);
-    }
+  // Prioriza el 'id' directamente del webhookData, si no, usa webhookData.data.id
+  const id = webhookData.id || (webhookData.data ? webhookData.data.id : null);
+
+  if (id) {
+    const ActualyMonth = new Date().getMonth() + 1; // getMonth() devuelve un valor de 0 a 11, por eso se suma 1
+    await userService.addmountserveice(id, ActualyMonth);
+  } else {
+    console.error('No se encontró información del usuario!!!!!!');
+  }
 };
 
 const success = async (webhookData) => {
