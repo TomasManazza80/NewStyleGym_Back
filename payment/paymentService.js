@@ -42,48 +42,25 @@ const processWebhookData = async (webhookData) => {
     return;
   }
 
-  // Verificamos que el webhook sea de tipo 'payment'
-  if (webhookData.type !== 'payment') {
-    console.log('Webhook no es de tipo payment, ignorando...');
-    return;
-  }
-
   try {
-    const paymentId = webhookData.data.id; // ID del pago en MercadoPago
-    const currentMonth = new Date().getMonth() + 1;
-
-    // Consultamos el estado del pago
-    const response = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
+    const paymentId = webhookData.data.id;
+    const response = await axios.get(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      {
+        headers: {
+          'Authorization': 'Bearer APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359'
+        }
       }
-    });
+    );
 
-    const paymentStatus = response.data.status;
-
-    if (paymentStatus === 'approved') {
-      const userId = webhookData.external_reference; // Asumo que aquí está el ID de tu usuario
-      if (!userId) {
-        console.error('No se encontró external_reference en el webhook');
-        return;
-      }
-
-      const user = await userService.getUserById(userId);
-      if (!user) {
-        console.error(`Usuario con ID ${userId} no encontrado`);
-        return;
-      }
-
-      await userService.updateUser(user.id, {
-        month: currentMonth,
-      });
-      console.log(`Mes actualizado para el usuario ${userId}`);
-    } else {
-      console.log(`Pago ${paymentId} no está aprobado. Estado: ${paymentStatus}`);
+    if (response.data.status === 'approved') {
+      const userId = webhookData.external_reference;
+      const currentMonth = new Date().getMonth() + 1;
+      await userService.updateUser(userId, { month: currentMonth });
     }
   } catch (error) {
-    console.error('Error al procesar el webhook:', error.message);
-    throw error; // Para que el controller lo maneje
+    console.error('Error al procesar el pago:', error.message);
+    throw error;
   }
 };
 
