@@ -72,10 +72,10 @@ const processWebhookData = async (webhookData, queryParams) => {
 
   console.log(`Tipo de webhook recibido: ${webhookData.type}`);
 
-  if (webhookData.type !== 'payment') {
-    console.log(`Webhook de tipo '${webhookData.type}' ignorado. Solo se procesan 'payment' webhooks.`);
-    return;
-  }
+  // if (webhookData.type !== 'payment') {
+  //   console.log(`Webhook de tipo '${webhookData.type}' ignorado. Solo se procesan 'payment' webhooks.`);
+  //   return;
+  // }
 
   const paymentId = webhookData.data?.id || queryParams['data.id'];
   if (!paymentId) {
