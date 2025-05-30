@@ -194,6 +194,18 @@ const updateUser = async (data) => {
   }
 };
 
-const deleteUser = async () => {};
+const deleteUser = async (userId) => {
+  try {
+    const result = await model.user.destroy({
+      where: {
+        id: userId,
+      },
+    });
+    return result; // Retorna 1 si se eliminó, 0 si no se encontró
+  } catch (error) {
+    console.error('Error al eliminar el usuario:', error);
+    throw error;
+  }
+};
 
 module.exports = { updateActivity ,login, getActivity,addActivity, getIdByEmail, getMounts, createUser, updateUser, deleteUser, getRoleByEmail, getAllUsers, addmountserveice };

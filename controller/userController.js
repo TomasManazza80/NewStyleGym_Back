@@ -182,6 +182,19 @@ const getMounts = async (req, res) => {
 };
 
 
-const deleteUser = async (req, res) => {};
+const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const result = await userService.deleteUser(userId);
+    if (result === 1) {
+      res.status(200).send({ message: 'Usuario eliminado correctamente.' });
+    } else {
+      res.status(404).send({ message: 'Usuario no encontrado.' });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el usuario:', error);
+    res.status(500).send('Error interno del servidor al eliminar el usuario.');
+  }
+};
 
 module.exports = { updateActivity, loginUser,getActivity,activityAsigned,getId,getMounts, createUser, updateUser, deleteUser, getRole, getAllUsers, addmount };

@@ -1,7 +1,6 @@
 var express = require("express");
 var router = express.Router();
-const { updateActivity, createUser, loginUser, getRole, getId ,getActivity,activityAsigned, getMounts, updateUser, addmount, getAllUsers } = require("../controller/userController");
-
+const { updateActivity, createUser, loginUser, getRole, getId ,getActivity,activityAsigned, getMounts, updateUser, addmount, getAllUsers, deleteUser } = require("../controller/userController");
 
 router.post("/createuser", createUser);
 router.get("/getAllUsers", getAllUsers);
@@ -16,6 +15,6 @@ router.post("/login", loginUser);
 router.post("/addMount", addmount);
 router.get('/role/:email', getRole);
 router.put("/updateuser/:id", updateUser);
-
+router.delete("/deleteUser/:id", deleteUser);
 
 module.exports = router;
