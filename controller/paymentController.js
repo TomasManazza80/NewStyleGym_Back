@@ -4,7 +4,7 @@ const crypto = require('crypto'); // Necesario si decides usar la validación de
 
 const productService = require('../services/productService'); // Asegúrate de que la ruta sea correcta
 const paymentService = require('../payment/paymentService');
-console.log(paymentService);
+
 
 dotenv.config();
 const { Vexor } = vexor;
@@ -15,10 +15,7 @@ const vexorInstance = new Vexor({
   apiKey: process.env.VEXOR_API_KEY,
 });
 
-// Log para depuración
-console.log('Clave pública:', process.env.VEXOR_PUBLISHABLE_KEY);
-console.log('ID del proyecto:', process.env.VEXOR_PROJECT_ID);
-console.log('Clave API:', process.env.VEXOR_API_KEY);
+
 
 const createPayment = async (req, res) => {
   const { product } = req.body;
@@ -28,7 +25,7 @@ const createPayment = async (req, res) => {
   }
 
   try {
-    console.log('Datos del producto:', product);
+
     
     const paymentResponse = await vexorInstance.pay.mercadopago({
       items: [
@@ -40,7 +37,7 @@ const createPayment = async (req, res) => {
       ],
     });
 
-    console.log('Respuesta de pago:', paymentResponse);
+   
 
     if (paymentResponse && paymentResponse.payment_url) {
       res.status(200).json({ payment_url: paymentResponse.payment_url });
@@ -48,7 +45,7 @@ const createPayment = async (req, res) => {
       throw new Error('Respuesta de pago inválida');
     }
   } catch (error) {
-    console.error('Error al crear el pago:', error);
+ 
     res.status(500).json({ error: 'Error al procesar el pago' });
   }
 };
@@ -62,14 +59,11 @@ const handleWebhook = async (req, res) => {
     const xRequestId = req.headers['x-request-id']; // Obtener el header X-Request-ID
     const queryParams = req.query; // Obtener los query parameters
 
-    console.log('Datos del webhook:', webhookData);
-    console.log('X-Signature:', xSignature);
-    console.log('X-Request-ID:', xRequestId);
-    console.log('Query Params:', queryParams); 
+  
 
     // Verificación básica de datos
     if (!webhookData || !webhookData.type) {
-      console.warn('Datos del webhook inválidos o incompletos.');
+  
       return res.status(400).send('Datos del webhook inválidos.');
     }
 

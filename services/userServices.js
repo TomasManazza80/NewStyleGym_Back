@@ -154,17 +154,17 @@ const createUser = async (data) => {
 
 
 const getRoleByEmail = async (userEmail) => {
-  console.log(`Buscando usuario con email ${userEmail}`);
+
   try {
     const user = await model.user.findOne({ where: { email: userEmail } });
-    console.log(`Usuario encontrado: ${user}`);
+
     if (!user) {
-      console.log(`Usuario no encontrado`);
+
       return { error: 'User not found', statusCode: 404 };
     }
     return { role: user.role, statusCode: 200 };
   } catch (error) {
-    console.error('Error retrieving user role:', error);
+ 
     return { error: 'Internal Server Error', statusCode: 500 };
   }
 };
@@ -203,7 +203,7 @@ const deleteUser = async (userId) => {
     });
     return result; // Retorna 1 si se eliminó, 0 si no se encontró
   } catch (error) {
-    console.error('Error al eliminar el usuario:', error);
+   
     throw error;
   }
 };

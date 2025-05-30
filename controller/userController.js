@@ -53,7 +53,7 @@ const activityAsigned = async (req, res) => {
     const { actividad } = req.body; // La actividad viene en el cuerpo de la petición
 
     const response = await userService.addActivity(actividad, id);
-    console.log("Respuesta del servicio:", response);
+   
 
     if (!response) {
       return res.status(404).json({ error: "Usuario no encontrado" });
@@ -72,7 +72,7 @@ const getId = async (req, res) => {
   try {
     const userEmail = req.params.email;
     const response = await userService.getIdByEmail(userEmail);
-    console.log("Respuesta del servicio:", response);
+   
     
     if (!response) {
       return res.status(404).json({ error: "Usuario no encontrado" });

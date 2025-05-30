@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 async function authHash(argu) {
   const salt = await bcrypt.genSalt(10);
   const hashpassword = await bcrypt.hash(argu.password, salt);
-  console.log("hashPassword!:", hashpassword);
+
   return hashpassword;
 }
 
@@ -19,7 +19,7 @@ async function compareHash(Pass) {
 }
 
 async function createToken(argu) {
-  console.log("MYARGU:", argu);
+
   const token = await jwt.sign({
     id: argu.id,
     email: argu.email,
@@ -30,7 +30,7 @@ async function createToken(argu) {
   }, "mysecretkeyofcreatingtoken", {
     expiresIn: 604800,
   });
-  console.log("TOKEN FROM AUTH!", token);
+
   return token;
 }
 module.exports = { authHash, createToken, compareHash };

@@ -1,8 +1,8 @@
 const axios = require('axios');
 
 // Considera mover esta clave a una variable de entorno para mayor seguridad.
-const MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-6873100345219151-052215-3db26a9b390a78fbf929b41ffda94acf-1286636359';
-const BACKEND_BASE_URL = 'https://newstylegym-back.onrender.com';
+const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL ;
 
 // Función auxiliar para obtener el nombre del mes
 const getMonthName = (date) => {

@@ -3,7 +3,7 @@ const { model } = require("../models/index");
 const productServiceBought = {
 
   async createBoughtProduct(producto) {
-    console.log("lo que recibe el body: ", producto);
+    
     try {
       const { nombre, precio, marca, categoria, cantidad, talle, imagenes } = producto;
       const productBought = await model.ProductBought.create({
