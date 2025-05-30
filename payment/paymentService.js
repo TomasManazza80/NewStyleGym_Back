@@ -126,7 +126,7 @@ const processWebhookData = async (webhookData, queryParams) => {
       try {
         // *** CORRECCIÓN CLAVE AQUÍ: usar userEmail en la URL ***
         const getIdResponse = await axios.get(`https://newstylegym-back.onrender.com/getId/${userEmail}`);
-        finalUserId = getIdResponse.data.id;
+        finalUserId = getIdResponse;
         console.log(`ID numérico obtenido para ${userEmail}: ${finalUserId}`);
         if (!finalUserId) {
           console.error(`No se pudo obtener el ID numérico para el email: ${userEmail}`);
