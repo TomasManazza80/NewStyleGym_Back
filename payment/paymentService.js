@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Considera mover esta clave a una variable de entorno para mayor seguridad.
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL ;
+const API_URL = process.env.VITE_API_URL ;
 
 // Función auxiliar para obtener el nombre del mes
 const getMonthName = (date) => {
@@ -58,7 +58,7 @@ const processWebhookData = async (webhookData, queryParams) => {
         console.log("---------------------------------");
         console.log(`Buscando ID de usuario para el email: ${payerEmail}...`);
         console.log("---------------------------------");
-        const getIdResponse = await axios.get(`${BACKEND_BASE_URL}/getId/${payerEmail}`);
+        const getIdResponse = await axios.get(`${API_URL}/getId/${payerEmail}`);
         userId = getIdResponse.data; // Asumiendo que devuelve el ID directamente
         console.log("---------------------------------");
         console.log(`👤 ID de usuario obtenido: ${userId}`);
@@ -87,7 +87,7 @@ const processWebhookData = async (webhookData, queryParams) => {
         console.log("---------------------------------");
         console.log(`🔄 Enviando solicitud para registrar el mes ${currentMonth} para el usuario ${userId}...`);
         console.log("---------------------------------");
-        await axios.post(`${BACKEND_BASE_URL}/addMount`, addMonthBody);
+        await axios.post(`${API_URL}/addMount`, addMonthBody);
         console.log("---------------------------------");
         console.log(`🎉 Mes "${currentMonth}" registrado con éxito para el usuario ${userId}.`);
         console.log("---------------------------------");
